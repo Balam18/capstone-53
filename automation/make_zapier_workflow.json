@@ -1,0 +1,57 @@
+{
+  "workflow_name": "Capstone 53: Multi-Jurisdiction AI Policy Monitor",
+  "description": "Automated workflow template for Make.com or Zapier to track new AI governance policies across the EU, US, and India, and log them into Google Sheets.",
+  "version": "1.0",
+  "author": "CSE Capstone Group 53",
+  "trigger": {
+    "module": "rss",
+    "action": "new_feed_item",
+    "parameters": {
+      "urls": [
+        "https://digital-strategy.ec.europa.eu/en/rss.xml",
+        "https://www.nist.gov/news-events/news/rss.xml"
+      ],
+      "polling_interval_minutes": 60
+    }
+  },
+  "filter": {
+    "condition": "OR",
+    "rules": [
+      { "field": "title", "operator": "contains_case_insensitive", "value": "AI" },
+      { "field": "title", "operator": "contains_case_insensitive", "value": "artificial intelligence" },
+      { "field": "title", "operator": "contains_case_insensitive", "value": "regulation" },
+      { "field": "title", "operator": "contains_case_insensitive", "value": "deepfake" },
+      { "field": "description", "operator": "contains_case_insensitive", "value": "governance" },
+      { "field": "description", "operator": "contains_case_insensitive", "value": "compliance" }
+    ]
+  },
+  "actions": [
+    {
+      "step": 1,
+      "module": "google_sheets",
+      "action": "add_row",
+      "parameters": {
+        "spreadsheet_id": "{{user_spreadsheet_id}}",
+        "worksheet_name": "AI_Policy_Alerts",
+        "column_mapping": {
+          "Timestamp": "{{sys.now}}",
+          "Source_Feed": "{{trigger.feed_title}}",
+          "Title": "{{trigger.title}}",
+          "Published_Date": "{{trigger.pubDate}}",
+          "Summary": "{{trigger.description}}",
+          "Link": "{{trigger.link}}"
+        }
+      }
+    },
+    {
+      "step": 2,
+      "module": "slack_or_email",
+      "action": "send_notification",
+      "optional": true,
+      "parameters": {
+        "channel": "#ai-policy-alerts",
+        "message": "🚨 *New AI Regulatory Update Detected!*\n*Source:* {{trigger.feed_title}}\n*Title:* {{trigger.title}}\n*Link:* {{trigger.link}}"
+      }
+    }
+  ]
+}
